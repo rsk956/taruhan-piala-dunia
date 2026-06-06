@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Piala Dunia 2026 - Tebak Jagoan</title>
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- Vue 3 -->
+  <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap" rel="stylesheet">
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+          },
+          colors: {
+            brand: {
+              purple: '#4B1A73',
+              dark: '#1C0D30',
+              teal: '#00E5FF',
+              pink: '#FF007F'
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body {
+      background: linear-gradient(135deg, #1C0D30 0%, #4B1A73 100%);
+      background-attachment: fixed;
+    }
+    .glass-card {
+      background: rgba(255, 255, 255, 0.05);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    .custom-scrollbar::-webkit-scrollbar {
+      width: 6px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-track {
+      background: rgba(255,255,255,0.05); 
+      border-radius: 4px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: rgba(0, 229, 255, 0.5); 
+      border-radius: 4px;
+    }
+    
+    /* Style untuk radio button custom */
+    input[type="radio"]:checked + div {
+      background-color: rgba(0, 229, 255, 0.15);
+      border-color: #00E5FF;
+    }
+  </style>
+</head>
+<body class="text-white min-h-screen">
+
+  <div id="app" class="max-w-6xl mx-auto px-4 py-10">
+    
+    <!-- Header -->
+    <header class="text-center mb-10">
+      <h1 class="text-4xl md:text-6xl font-extrabold tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-brand-teal to-brand-pink mb-3">
+        FIFA WORLD CUP 2026™
+      </h1>
+      <p class="text-lg md:text-xl font-light text-gray-300">
+        Siapa negara jagoan yang akan mengangkat trofi? Masukkan tebakanmu!
+      </p>
+    </header>
+
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+      
+      <!-- Formulir Taruhan -->
+      <div class="col-span-1 lg:col-span-7">
+        <div class="glass-card rounded-2xl p-6 shadow-2xl h-full flex flex-col">
+          <h2 class="text-2xl font-semibold mb-6 border-b border-white/20 pb-2 flex items-center justify-between">
+            <span>Kirim Tebakan</span>
+            <span v-if="formData.negara" class="text-sm font-normal text-brand-teal flex items-center bg-brand-dark/50 px-3 py-1 rounded-full border border-brand-teal/30">
+              Pilihan: 
+              <img :src="getFlagUrl(formData.negara, 'w40')" class="w-4 ml-2 mr-1" />
+              {{ formData.negara }}
+            </span>
+          </h2>
+          
+          <form @submit.prevent="submitTaruhan" class="flex-1 flex flex-col">
+            <!-- Input Nama -->
+            <div class="mb-5">
+              <label class="block text-sm font-medium mb-2 text-gray-300">Nama Anda</label>
+              <input type="text" v-model="formData.nama" required placeholder="Contoh: Budi Santoso" 
+                     class="w-full bg-black/30 border border-white/20 rounded-lg px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-brand-teal focus:ring-1 focus:ring-brand-teal transition-colors">
+            </div>
+
+            <!-- Input Negara (Berdasarkan Grup) -->
+            <div class="mb-6 flex-1 flex flex-col min-h-0">
+              <label class="block text-sm font-medium mb-2 text-gray-300">Pilih 1 Negara Jagoan</label>
+              
+              <div class="bg-black/30 border border-white/20 rounded-lg p-4 flex-1 overflow-y-auto custom-scrollbar" style="max-height: 400px;">
+                
+                <div v-for="(negaraList, grupName) in grupPialaDunia" :key="grupName" class="mb-6 last:mb-0">
+                  <h3 class="text-brand-pink font-bold mb-3 border-b border-white/10 pb-1 inline-block">Grup {{ grupName }}</h3>
+                  <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
+                    
+                    <label v-for="negara in negaraList" :key="negara" class="cursor-pointer group relative">
+                      <!-- Hidden Radio -->
+                      <input type="radio" :value="negara" v-model="formData.negara" name="negara_pilihan" class="peer sr-only">
+                      
+                      <!-- Card Tampilan -->
+                      <div class="flex items-center space-x-3 p-3 rounded-lg border border-transparent bg-white/5 hover:bg-white/10 transition-all peer-checked:bg-brand-teal/10 peer-checked:border-brand-teal peer-checked:shadow-[0_0_10px_rgba(0,229,255,0.3)]">
+                        <img :src="getFlagUrl(negara, 'w40')" :alt="negara" class="w-6 h-auto object-cover shadow-sm rounded-sm" onerror="this.style.display='none'">
+                        <span class="text-sm font-medium text-gray-200 group-hover:text-white transition peer-checked:text-white peer-checked:font-bold">{{ negara }}</span>
+                      </div>
+                    </label>
+
+                  </div>
+                </div>
+
+              </div>
+            </div>
+
+            <!-- Notifikasi -->
+            <div v-if="pesan" :class="pesanClass" class="mb-4 p-3 rounded-lg text-sm font-medium">
+              {{ pesan }}
+            </div>
+
+            <!-- Tombol Submit -->
+            <button type="submit" :disabled="isSubmitting || !formData.negara" 
+                    class="w-full mt-auto bg-gradient-to-r from-brand-teal to-blue-500 hover:from-blue-400 hover:to-brand-teal text-brand-dark font-bold py-3 px-4 rounded-lg shadow-lg transform transition hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed">
+              <span v-if="isSubmitting">Mengirim...</span>
+              <span v-else-if="!formData.negara">Pilih Negara Dulu</span>
+              <span v-else>Kunci Pilihan Saya</span>
+            </button>
+          </form>
+        </div>
+      </div>
+
+      <!-- Daftar Penebak -->
+      <div class="col-span-1 lg:col-span-5">
+        <div class="glass-card rounded-2xl p-6 shadow-2xl h-full flex flex-col" style="min-height: 500px;">
+          <div class="flex justify-between items-center mb-6 border-b border-white/20 pb-2">
+            <h2 class="text-2xl font-semibold">Live Leaderboard</h2>
+            <button @click="fetchTaruhan" class="text-brand-teal hover:text-white text-sm flex items-center transition" title="Refresh Data">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+              Refresh
+            </button>
+          </div>
+
+          <!-- Loading State -->
+          <div v-if="isLoading" class="flex-1 flex justify-center items-center">
+            <div class="animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-brand-teal"></div>
+          </div>
+
+          <!-- Empty State -->
+          <div v-else-if="taruhanList.length === 0" class="flex-1 flex flex-col justify-center items-center text-gray-400 text-center space-y-3">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
+            </svg>
+            <p>Belum ada yang bertaruh.<br/>Jadilah yang pertama!</p>
+          </div>
+
+          <!-- List Data (Dikelompokkan berdasarkan negara) -->
+          <div v-else class="flex-1 overflow-y-auto custom-scrollbar pr-2 space-y-4">
+            <div v-for="(group, index) in groupedLeaderboard" :key="group.negara" 
+                 class="bg-white/5 border border-white/10 rounded-xl p-5 hover:bg-white/10 transition-colors">
+              
+              <!-- Header Negara -->
+              <div class="flex items-center justify-between mb-4 border-b border-white/10 pb-3">
+                <div class="flex items-center space-x-4">
+                  <!-- Bendera agak besar dengan nomor peringkat -->
+                  <div class="relative">
+                    <img :src="getFlagUrl(group.negara, 'w80')" class="w-16 h-auto rounded shadow-md border border-white/20" onerror="this.style.display='none'"/>
+                    <div class="absolute -top-3 -left-3 w-7 h-7 bg-brand-pink text-white rounded-full flex items-center justify-center text-xs font-bold shadow-lg border-2 border-brand-dark">
+                      #{{ index + 1 }}
+                    </div>
+                  </div>
+                  <div>
+                    <h3 class="font-bold text-xl text-brand-teal leading-tight">{{ group.negara }}</h3>
+                    <p class="text-xs text-gray-400 mt-0.5">{{ group.users.length }} Pendukung</p>
+                  </div>
+                </div>
+              </div>
+
+              <!-- List Nama Pendukung -->
+              <div class="flex flex-wrap gap-2">
+                <span v-for="(user, uIdx) in group.users" :key="uIdx" 
+                      class="inline-flex items-center px-3 py-1.5 bg-black/40 border border-white/5 rounded-full text-sm font-medium hover:bg-white/10 transition"
+                      :title="formatDate(user.timestamp)">
+                  <span class="w-5 h-5 rounded-full bg-gradient-to-br from-brand-teal to-blue-600 flex items-center justify-center text-[10px] font-bold text-white mr-2 shadow-sm shrink-0">
+                    {{ user.nama.charAt(0).toUpperCase() }}
+                  </span>
+                  <span class="truncate max-w-[120px]">{{ user.nama }}</span>
+                </span>
+              </div>
+              
+            </div>
+          </div>
+          
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+    const { createApp, ref, computed, onMounted } = Vue;
+
+    createApp({
+      setup() {
+        // ========== KONFIGURASI ==================
+        // GANTI STRING KOSONG INI DENGAN URL WEB APP GOOGLE APPS SCRIPT ANDA
+        const gasUrl = 'https://script.google.com/macros/s/AKfycbwTGzBSQ4HlCexHTKNHp-UByMFiDqBLvFV5meHlic5l7ZRNmbAbCDrUCte9DpRwrFNq/exec'; 
+        // =========================================
+
+        const flagMap = {
+          "Afrika Selatan": "za", "Aljazair": "dz", "Amerika Serikat": "us", "Arab Saudi": "sa", "Argentina": "ar",
+          "Australia": "au", "Austria": "at", "Belanda": "nl", "Belgia": "be", "Bosnia dan Herzegovina": "ba",
+          "Brasil": "br", "Ceko": "cz", "Curaçao": "cw", "Ekuador": "ec", "Ghana": "gh", "Haiti": "ht",
+          "Inggris": "gb-eng", "Irak": "iq", "Iran": "ir", "Jepang": "jp", "Jerman": "de", "Kanada": "ca",
+          "Kolombia": "co", "Korea Selatan": "kr", "Kroasia": "hr", "Maroko": "ma", "Meksiko": "mx",
+          "Mesir": "eg", "Norwegia": "no", "Panama": "pa", "Pantai Gading": "ci", "Paraguay": "py",
+          "Portugal": "pt", "Prancis": "fr", "Qatar": "qa", "RD Kongo": "cd", "Selandia Baru": "nz",
+          "Senegal": "sn", "Skotlandia": "gb-sct", "Spanyol": "es", "Swedia": "se", "Swiss": "ch",
+          "Tanjung Verde": "cv", "Tunisia": "tn", "Turki": "tr", "Uruguay": "uy", "Uzbekistan": "uz", "Yordania": "jo"
+        };
+
+        const getFlagUrl = (namaNegara, size = 'w40') => {
+          const code = flagMap[namaNegara];
+          if (!code) return ''; 
+          return `https://flagcdn.com/${size}/${code}.png`;
+        };
+
+        const grupPialaDunia = {
+          "A": ["Afrika Selatan", "Ceko", "Korea Selatan", "Meksiko"],
+          "B": ["Bosnia dan Herzegovina", "Kanada", "Qatar", "Swiss"],
+          "C": ["Brasil", "Haiti", "Maroko", "Skotlandia"],
+          "D": ["Amerika Serikat", "Australia", "Paraguay", "Turki"],
+          "E": ["Curaçao", "Ekuador", "Jerman", "Pantai Gading"],
+          "F": ["Belanda", "Jepang", "Swedia", "Tunisia"],
+          "G": ["Belgia", "Iran", "Mesir", "Selandia Baru"],
+          "H": ["Arab Saudi", "Spanyol", "Tanjung Verde", "Uruguay"],
+          "I": ["Irak", "Norwegia", "Prancis", "Senegal"],
+          "J": ["Aljazair", "Argentina", "Austria", "Yordania"],
+          "K": ["Kolombia", "Portugal", "RD Kongo", "Uzbekistan"],
+          "L": ["Ghana", "Inggris", "Kroasia", "Panama"]
+        };
+
+        // formData.negara sekarang string, bukan array
+        const formData = ref({
+          nama: '',
+          negara: '' 
+        });
+
+        const taruhanList = ref([]);
+        const isLoading = ref(true);
+        const isSubmitting = ref(false);
+        const pesan = ref('');
+        const pesanClass = ref('');
+
+        // Menghitung dan mengelompokkan leaderboard berdasarkan negara
+        const groupedLeaderboard = computed(() => {
+          const groups = {};
+          taruhanList.value.forEach(item => {
+            if (!groups[item.negara]) {
+              groups[item.negara] = {
+                negara: item.negara,
+                users: []
+              };
+            }
+            groups[item.negara].users.push(item);
+          });
+          
+          // Ubah ke array dan urutkan berdasarkan jumlah pendukung terbanyak
+          return Object.values(groups).sort((a, b) => b.users.length - a.users.length);
+        });
+
+        const formatDate = (dateString) => {
+          if (!dateString) return '';
+          const options = { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' };
+          return new Date(dateString).toLocaleDateString('id-ID', options);
+        };
+
+        const fetchTaruhan = async () => {
+          if(!gasUrl) {
+             taruhanList.value = [
+                { nama: "Agus", negara: "Brasil", timestamp: new Date().toISOString() },
+                { nama: "Budi", negara: "Argentina", timestamp: new Date(Date.now() - 3600000).toISOString() },
+                { nama: "Siti", negara: "Jepang", timestamp: new Date(Date.now() - 7200000).toISOString() }
+             ];
+             isLoading.value = false;
+             return;
+          }
+
+          isLoading.value = true;
+          try {
+            const response = await fetch(gasUrl);
+            const data = await response.json();
+            
+            // Format ulang data dari Google Sheet (kalau dulu array, ubah jadi string pertama)
+            const formattedData = data.map(item => {
+                let negaraTunggal = item.negara;
+                if(Array.isArray(item.negara)) {
+                    negaraTunggal = item.negara[0];
+                }
+                return { ...item, negara: negaraTunggal };
+            });
+
+            taruhanList.value = formattedData.reverse(); 
+          } catch (error) {
+            console.error("Gagal mengambil data", error);
+            pesan.value = "Gagal mengambil data dari server.";
+            pesanClass.value = "bg-red-500/20 text-red-200 border border-red-500/50";
+          } finally {
+            isLoading.value = false;
+          }
+        };
+
+        const submitTaruhan = async () => {
+          if (!formData.value.negara) {
+            pesan.value = "Silakan pilih 1 negara terlebih dahulu!";
+            pesanClass.value = "bg-yellow-500/20 text-yellow-200 border border-yellow-500/50";
+            return;
+          }
+
+          if(!gasUrl) {
+            isSubmitting.value = true;
+            setTimeout(() => {
+              taruhanList.value.unshift({
+                nama: formData.value.nama,
+                negara: formData.value.negara,
+                timestamp: new Date().toISOString()
+              });
+              formData.value.nama = '';
+              formData.value.negara = '';
+              isSubmitting.value = false;
+              pesan.value = "Mode Demo: Taruhan tersimpan secara lokal.";
+              pesanClass.value = "bg-green-500/20 text-green-200 border border-green-500/50";
+            }, 800);
+            return;
+          }
+
+          isSubmitting.value = true;
+          pesan.value = '';
+
+          try {
+            const response = await fetch(gasUrl, {
+              method: 'POST',
+              // Karena GAS kita di kode sebelumnya mengharapkan array, kita bungkus dalam array [negara]
+              // agar Google Sheet tidak error saat melakukan .join()
+              body: JSON.stringify({
+                nama: formData.value.nama,
+                negara: [formData.value.negara] 
+              })
+            });
+
+            const result = await response.json();
+            
+            if (result.status === 'success') {
+              pesan.value = "Berhasil! Pilihanmu sudah dikunci.";
+              pesanClass.value = "bg-green-500/20 text-green-200 border border-green-500/50";
+              formData.value.nama = '';
+              formData.value.negara = '';
+              await fetchTaruhan(); 
+            } else {
+              throw new Error(result.message);
+            }
+          } catch (error) {
+            console.error("Gagal mengirim", error);
+            pesan.value = "Gagal mengirim data. Pastikan URL Apps Script sudah benar.";
+            pesanClass.value = "bg-red-500/20 text-red-200 border border-red-500/50";
+          } finally {
+            isSubmitting.value = false;
+            setTimeout(() => { pesan.value = '' }, 5000);
+          }
+        };
+
+        onMounted(() => {
+          fetchTaruhan();
+        });
+
+        return {
+          grupPialaDunia,
+          formData,
+          taruhanList,
+          isLoading,
+          isSubmitting,
+          pesan,
+          pesanClass,
+          submitTaruhan,
+          fetchTaruhan,
+          formatDate,
+          getFlagUrl,
+          groupedLeaderboard
+        };
+      }
+    }).mount('#app');
+  </script>
+</body>
+</html>
